@@ -39,7 +39,7 @@ ExampleJob.current_queue_status('hoge')
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/resque-queue-status.
+Bug reports and pull requests are welcome on GitHub at https://github.com/ikuto0608/resque-queue-status.
 
 ## License
 
