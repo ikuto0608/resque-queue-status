@@ -37,6 +37,8 @@ Resque.enqueue(ExampleJob, queue_status_key: 'hoge')
 ExampleJob.current_queue_status('hoge')
 ```
 
+Statuses are `PROCESS`, `COMPLETE` and `FAIL`.
+
 ## Contributing
 
 Bug reports and pull requests are welcome on GitHub at https://github.com/ikuto0608/resque-queue-status.
