@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'yaml'
 require 'resque/plugins/queue/status/version'
 
 module Resque
@@ -28,36 +29,36 @@ module Resque
       # The queue status key lasts 24 hours to expire
       #
       module Status
-        PROCESS = 'PROCESS'
-        COMPLETE = 'COMPLETE'
-        FAIL = 'FAIL'
-        STATUSES = [PROCESS, COMPLETE, FAIL].freeze
+        IN_PROGESS = 'IN_PROGESS'
+        COMPLETED = 'COMPLETED'
+        FAILED = 'FAILED'
+        STATUSES = [IN_PROGESS, COMPLETED, FAILED].freeze
 
         def before_enqueue_queue_status(args)
           _set_status(
             queue_status_key: _queue_status_key(args),
-            status: PROCESS
+            status: IN_PROGESS
           )
         end
 
         def after_perform_queue_status(args)
           _set_status(
             queue_status_key: _queue_status_key(args),
-            status: COMPLETE
+            status: COMPLETED
           )
         end
 
         def on_failure_queue_status(err, args)
           _set_status(
             queue_status_key: _queue_status_key(args),
-            status: FAIL,
-            meta: err
+            status: FAILED,
+            meta: err.to_yaml
           )
         end
 
         def current_queue_status(queue_status_key)
           JSON.parse(
-            Resque.redis.get(_namespaced_queue_status(queue_status_key)),
+            Resque.redis.get(_namespaced_queue_status(queue_status_key)) || '{}',
             symbolize_names: true
           )
         end
@@ -75,6 +76,8 @@ module Resque
         end
 
         def _namespaced_queue_status(queue_status_key)
+          return if queue_status_key.nil?
+
           queue_status_key_name = Resque::Job.decode(
             Resque::Job.encode(queue_status_key)
           )
@@ -82,11 +85,16 @@ module Resque
         end
 
         def _set_status(args)
+          queue_status = _namespaced_queue_status(args[:queue_status_key])
+          return if queue_status.nil?
+
           Resque.redis.set(
-            _namespaced_queue_status(args[:queue_status_key]),
+            queue_status,
             args.slice(:status, :meta).to_json,
             ex: 24 * 60 * 60
           )
+
+          queue_status
         end
 
         def _prefix

@@ -37,7 +37,7 @@ Resque.enqueue(ExampleJob, queue_status_key: 'hoge')
 ExampleJob.current_queue_status('hoge')
 ```
 
-Statuses are `PROCESS`, `COMPLETE` and `FAIL`.
+Statuses are `IN_PROGESS`, `COMPLETED` and `FAILED`.
 
 ## Contributing
 

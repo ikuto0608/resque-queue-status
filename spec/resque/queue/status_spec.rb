@@ -26,7 +26,7 @@ RSpec.describe Resque::Plugins::Queue::Status do
     end
 
     def self.perform(*)
-      raise 'FAIL'
+      raise StandardError.new, 'FAILED'
     end
   end
 
@@ -38,33 +38,36 @@ RSpec.describe Resque::Plugins::Queue::Status do
     Resque::Plugin.lint(Resque::Plugins::Queue::Status)
   end
 
-  it 'status in PROCESS when it begins' do
+  it 'status in IN_PROGESS when it begins' do
     Resque.enqueue(Job, queue_status_key: queue_status_key)
     expect(Job.current_queue_status(queue_status_key)[:status])
-      .to eq 'PROCESS'
+      .to eq 'IN_PROGESS'
   end
 
-  it 'status in COMPLETE when it finishes' do
+  it 'status in COMPLETED when it finishes' do
     Resque.enqueue(Job, queue_status_key: queue_status_key)
     expect(Job.current_queue_status(queue_status_key)[:status])
-      .to eq 'PROCESS'
+      .to eq 'IN_PROGESS'
 
     klass = Resque.reserve(Job.queue)
     klass.perform
     expect(Job.current_queue_status(queue_status_key)[:status])
-      .to eq 'COMPLETE'
+      .to eq 'COMPLETED'
   end
 
-  it 'status in FAIL when it throws an exception' do
+  it 'status in FAILED when it throws an exception' do
     Resque.enqueue(FailJob, queue_status_key: queue_status_key)
     expect(FailJob.current_queue_status(queue_status_key)[:status])
-      .to eq 'PROCESS'
+      .to eq 'IN_PROGESS'
 
     klass = Resque.reserve(FailJob.queue)
-    expect { klass.perform }.to raise_error 'FAIL'
+    expect { klass.perform }.to raise_error StandardError
 
-    expect(FailJob.current_queue_status(queue_status_key)[:status])
-      .to eq 'FAIL'
+    expect(
+      FailJob.current_queue_status(queue_status_key)[:status]
+    ).to eq 'FAILED'
+    err = YAML.load FailJob.current_queue_status(queue_status_key)[:meta]
+    expect(err.class).to eq StandardError
   end
 
   it 'deletes all keys' do
